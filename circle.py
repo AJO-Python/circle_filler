@@ -24,7 +24,7 @@ class Circle_obj:
             xy=self.loc,
             radius=self.radius,
             facecolor=self.color,
-            linewidth=3,
+            linewidth=1.5,
             edgecolor="k"
         )
 
@@ -60,8 +60,9 @@ def fill_with_circles(size, region_size, patience):
     """
     :param int size: width of max circle size
     :param tuple(int, int) region_size: fill area (pixels)
-    :rtype: list(object)
-    :return: list of Cirles to fill region
+    :param int patience: Numberof attempts to make before reducing circle size
+    :rtype: list(Circle_obj)
+    :return: Cirle_obj's to fill region with
     """
     circles = []
     minimum_size = 5
@@ -69,25 +70,20 @@ def fill_with_circles(size, region_size, patience):
 
     # Continue making circles until minimum size reached
     while size >= minimum_size:
-        x = np.random.randint(region_size[0])
-        y = np.random.randint(region_size[1])
+        # Restrict positions so that a circle will always be fully inside region
+        x = np.random.randint(size/2, region_size[0]-(size/2))
+        y = np.random.randint(size/2, region_size[1]-(size/2))
         location = [x, y]
         # Make a new test circle
         new_circle = Circle_obj(size, location)
-        # If it overlaps with any existing circles then dont add it
+        # Check if touching any existing circles
         overlaps = [new_circle.is_touching(other) for other in circles]
-        if np.any(overlaps):
-            overlap_count += 1
-        # If it has its own space add to list
-        elif new_circle.is_out_region(region_size):
-            overlap_count += 1
-        else:
+        if not np.any(overlaps):
             circles.append(new_circle)
-            # Reset overlap count
             overlap_count = 0
-
-        # If no new circles have been added then decrease the size and
-        # reset the overlap count
+        else:
+            overlap_count += 1
+        
         if overlap_count % patience == 0:
             size -= minimum_size
             print(f"Size: {size}")
@@ -97,20 +93,18 @@ def fill_with_circles(size, region_size, patience):
 
 def plot_circles(circle_list):
     """
-    :param list(Circle) circle_list: List of Circles to add to a plot
+    :param list(Circle_obj) circle_list: List of Circle_obj's to add to a plot
     :return: fig, ax
     """
     fig, ax = plt.subplots(figsize=(6, 6))
     for circle in circle_list:
-        patch = circle.make_patch()
-        ax.add_patch(patch)
+        circ_patch = circle.make_patch()
+        ax.add_patch(circ_patch)
         #ax.annotate(f"{circle.size}", xy=circle.loc)
     return fig, ax
 
 def main():
-    print("Inside main function")
-
-    print("Set starting size and region")
+    print("Setting starting size and region")
     starting_size = 250
     region = [600, 400]
     patience = 5_000
@@ -127,7 +121,7 @@ def main():
     ax.set_aspect("equal")
 
     print("Saving figure...")
-    fig.savefig("circles.png", bbox_inches="tight", dpi=1600)
+    fig.savefig("circles.png", bbox_inches="tight", dpi=300)
     print("Finished.")
 
 if __name__ == "__main__":
